@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Bolso</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <script>
+        try {
+            document.documentElement.dataset.theme =
+                localStorage.getItem('tema') || 'dark';
+        } catch (e) {}
+    </script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="antialiased text-gray-800">
+
+    <!-- Tela de login / cadastro -->
+    <div id="auth-screen" class="min-h-screen flex items-center justify-center px-4 py-10">
+        <div class="card w-full max-w-md p-8">
+            <h1 class="text-2xl font-bold text-center text-gray-900">Bolso</h1>
+            <p class="text-center text-gray-500 text-sm mt-1 mb-6">Entre ou crie sua conta para ver o seu orçamento.</p>
+
+            <div id="config-warning" class="hidden auth-alert auth-alert-error mb-4"></div>
+
+            <div class="auth-tabs">
+                <button type="button" id="tab-login" class="auth-tab active">Entrar</button>
+                <button type="button" id="tab-signup" class="auth-tab">Criar conta</button>
+            </div>
+
+            <div id="auth-message" class="hidden" role="alert"></div>
+
+            <form id="login-form" class="space-y-4 mt-4">
+                <input type="email" id="login-email" placeholder="E-mail" autocomplete="email" class="form-input w-full" required>
+                <input type="password" id="login-password" placeholder="Senha" autocomplete="current-password" class="form-input w-full" required>
+                <button type="submit" class="w-full btn-primary font-bold py-3 px-4 rounded-lg">Entrar</button>
+                <button type="button" id="forgot-password-btn" class="auth-link w-full text-sm">Esqueci minha senha</button>
+            </form>
+
+            <form id="signup-form" class="hidden space-y-4 mt-4">
+                <input type="text" id="signup-name" placeholder="Nome (opcional)" autocomplete="name" class="form-input w-full">
+                <input type="email" id="signup-email" placeholder="E-mail" autocomplete="email" class="form-input w-full" required>
+                <input type="password" id="signup-password" placeholder="Senha (mínimo 6 caracteres)" autocomplete="new-password" minlength="6" class="form-input w-full" required>
+                <input type="password" id="signup-password-confirm" placeholder="Confirmar senha" autocomplete="new-password" minlength="6" class="form-input w-full" required>
+                <button type="submit" class="w-full btn-primary font-bold py-3 px-4 rounded-lg">Criar conta</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Aplicação Principal (só aparece depois do login) -->
+    <div id="main-app" class="hidden">
+
+        <!-- Header -->
+        <header class="bg-white shadow-md sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-900">Organizador Financeiro 💰</h1>
+                <div class="flex items-center gap-3">
+                    <span id="user-label" class="hidden sm:inline text-sm text-gray-500"></span>
+                    <button id="theme-toggle" type="button" class="theme-toggle" title="Alternar tema"></button>
+                    <button id="logout-btn" type="button" class="theme-toggle btn-ghost" title="Sair da conta">Sair</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conteúdo principal -->
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <!-- Loading -->
+            <div id="loading-spinner" class="flex justify-center items-center h-64">
+                <svg class="animate-spin -ml-1 mr-3 h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <p id="data-error" class="hidden text-center text-red-500 px-4 py-10"></p>
+            <!-- Conteúdo da aplicação -->
+            <div id="content" class="hidden space-y-8">
+                <!-- Botões principais -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button id="addTransactionBtn" class="w-full btn-primary font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg">Adicionar Transação</button>
+                    <button id="manageRecurringExpensesBtn"class="w-full btn-secondary font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg">Despesas Recorrentes e Parcelas</button>
+                    <button id="manageAccountsBtn"class="w-full btn-tertiary font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg">Gerenciar Contas</button>
+                </div>
+                <!-- Indicadores principais -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
+                    <!-- Saldo Principal -->
+                    <div class="card p-6">
+                        <h3 class="text-gray-500 font-medium">Saldo Principal</h3>
+                        <p id="balance" class="big-number text-3xl font-bold text-gray-900 mt-2">R$ 0,00</p></div>
+                    <!-- Saldo VR -->
+                    <div class="card p-6 bg-orange-50">
+                        <h3 class="text-orange-800 font-medium">Saldo VR</h3>
+                        <p id="vr-balance" class="big-number text-3xl font-bold text-orange-900 mt-2">R$ 0,00</p>
+                    </div>
+                    <!-- Total Guardado -->
+                    <div class="card p-6 bg-teal-50">
+                        <h3 class="text-teal-800 font-medium">Total Guardado</h3>
+                        <p id="total-saved" class="big-number text-3xl font-bold text-teal-900 mt-2">R$ 0,00</p>
+                    </div>
+                    <!-- Receitas -->
+                    <div class="card p-6"><h3 class="text-gray-500 font-medium">Receitas (Mês)</h3>
+                        <p id="income"class="big-number text-3xl font-bold text-green-600 mt-2">R$ 0,00</p>
+                    </div>
+                    <!-- Despesas -->
+                    <div class="card p-6"><h3 class="text-gray-500 font-medium">Despesas (Mês)</h3><p id="expenses" class="big-number text-3xl font-bold text-red-600 mt-2">
+                            R$ 0,00</p>
+                    </div>
+                    <!-- Crédito -->
+                    <div class="card p-6 bg-blue-50"><h3 class="text-blue-800 font-medium">Crédito (Mês)</h3><p  id="credit-expenses" class="big-number text-3xl font-bold text-blue-900 mt-2">R$ 0,00</p>
+                    </div>
+                </div>
+                <!-- Gráficos principais -->
+                <div class="grid grid-cols-1 lg:grid-cols-6 gap-6">
+                    <!-- Receitas vs Despesas -->
+                    <div class="lg:col-span-6 card p-6">
+                        <h3 class="font-semibold text-lg mb-4">
+                            Receitas vs Despesas (Últimos 6 Meses)
+                        </h3>
+                        <div class="h-80">
+                            <canvas id="monthlyFlowChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Despesas por Categoria -->
+                    <div class="lg:col-span-3 card p-6">
+                        <h3 class="font-semibold text-lg mb-4">
+                            Despesas por Categoria
+                        </h3>
+                        <div class="h-80">
+                            <canvas id="expensesByCategoryChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Despesas por Forma de Pagamento -->
+                    <div class="lg:col-span-3 card p-6">
+                        <h3 class="font-semibold text-lg mb-4">
+                            Despesas por Forma de Pagamento
+                        </h3>
+                        <div class="h-80">
+                            <canvas id="expensesByPaymentMethodChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- Previsões e análises -->
+                <div class="space-y-4">
+                    <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-indigo-200 pb-2">Previsões e Análises Futuras</h2>
+                    <!-- Projeção de fluxo e orçamento -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Projeção de Fluxo de Caixa -->
+                        <div class="card p-6">
+                            <h3 class="font-semibold text-lg mb-4">
+                                Projeção de Fluxo de Caixa (6 Meses)
+                            </h3>
+                            <div class="h-80">
+                                <canvas id="cashFlowProjectionChart"></canvas>
+                            </div>
+                        </div>
+                        <!-- Queima de orçamento -->
+                        <div class="card p-6">
+                            <h3 class="font-semibold text-lg mb-2">
+                                Queima de Orçamento Mensal
+                            </h3>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <select id="budget-category-select" class="form-input flex-grow"></select>
+                                <input type="number" id="budget-amount-input" placeholder="Orçamento (R$)" class="form-input w-full sm:w-36">
+                            </div>
+                            <div class="h-64 mt-4"><canvas id="budgetBurnDownChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Projeção anual -->
+                    <div class="card p-6">
+                        <h3 class="font-semibold text-lg mb-4">
+                            Projeção Anual de Saldo
+                        </h3>
+                        <div class="h-80">
+                            <canvas id="annualProjectionChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Simulador de investimentos -->
+                    <div class="card p-6">
+                        <h3 class="font-semibold text-lg mb-2">
+                            Simulador de Investimentos
+                        </h3>
+                        <div
+                            class="flex flex-col sm:flex-row gap-2 items-end">
+                            <div class="flex-grow">
+                                <label class="text-sm font-medium">Conta</label>
+                                <select id="investment-account-select"class="form-input w-full"></select>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium">Taxa Anual (%)</label>
+                                <input type="number" id="investment-rate" placeholder="Ex: 10.5" class="form-input w-full">
+                            </div>
+                        </div>
+                        <div class="h-60 mt-4">
+                            <canvas id="investmentGrowthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- Histórico de transações -->
+                <div class="card p-6">
+                    <h3 class="font-semibold text-lg mb-6">Histórico de Transações Detalhado</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6 items-end">
+                            <div><label for="filter-date-from" class="block text-xs font-medium mb-1">De</label><input type="date" id="filter-date-from" class="form-input w-full"></div>
+                            <div><label for="filter-date-to" class="block text-xs font-medium mb-1">Até</label><input type="date" id="filter-date-to" class="form-input w-full">
+                        </div>
+                        <div>
+                            <label for="filter-category" class="block text-xs font-medium mb-1">Categoria</label><select id="filter-category" class="form-input w-full"></select>
+                        </div>
+                        <div>
+                            <label for="filter-payment" class="block text-xs font-medium mb-1">Pagamento</label>
+                            <select id="filter-payment" class="form-input w-full">
+                                <option value="">Todos</option>
+                                <option value="pix_debito">Pix/Débito</option>
+                                <option value="credito">Crédito</option>
+                                <option value="vr">VR</option>
+                            </select>
+                        </div>
+                        <button type="button" id="clear-filters-btn"class="bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300">Limpar filtros</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoria</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pagamento</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody
+                                id="transaction-list"
+                                class="bg-white divide-y divide-gray-200"
+                            ></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- ======================================== -->
+    <!-- MODAIS                                   -->
+    <!-- ======================================== -->
+    <!-- Modal: Nova Transação -->
+    <div id="transaction-modal"class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+        <div class="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-xl bg-white">
+            <h3 id="transaction-modal-title" class="text-lg leading-6 font-medium text-gray-900 text-center">Adicionar Nova Transação</h3>
+            <form id="transaction-form" class="space-y-4 mt-4">
+                <input type="hidden" id="transaction-id">
+                <!-- Descrição -->
+                <input type="text" id="description"placeholder="Descrição" class="form-input w-full"required>
+                <!-- Valor -->
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-500">R$</span>
+                    <input type="number" id="amount" placeholder="0,00" step="0.01" class="form-input w-full" required>
+                </div>
+                <!-- Tipo -->
+                <select id="type"class="form-input w-full">
+                    <option value="expense">Despesa</option>
+                    <option value="income">Receita</option>
+                </select>
+                <!-- Categoria -->
+                <select id="category" class="form-input w-full"></select>
+                <!-- Forma de pagamento -->
+                <div id="payment-method-section"class="hidden">
+                    <label for="payment-method"class="block text-sm font-medium mb-1">Forma de pagamento</label>
+                    <select id="payment-method"class="form-input w-full">
+                        <option value="pix_debito">Pix/Débito</option>
+                        <option value="credito">Crédito</option>
+                        <option value="vr">VR</option>
+                    </select>
+                </div>
+                <!-- Conta -->
+                <div id="account-selection-section" class="hidden">
+                    <select id="account-select" class="form-input w-full"></select>
+                </div>
+                <!-- Data -->
+                <input type="date" id="date"class="form-input w-full" required>
+                <!-- Botões -->
+                <div class="items-center gap-4 px-4 py-3 sm:px-6 flex flex-col sm:flex-row-reverse">
+                    <button type="submit" class="w-full sm:w-auto btn-primary font-bold py-2 px-4 rounded-lg">Salvar</button>
+                    <button type="button" class="close-modal-btn w-full sm:w-auto mt-2 sm:mt-0 bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Modal: Gerenciar Despesas Recorrentes -->
+    <div id="manage-recurring-expenses-modal"class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+        <div class="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-xl bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium">Gerenciar Despesas Recorrentes</h3>
+                <button type="button"class="close-modal-btn text-2xl font-bold">&times;</button>
+            </div>
+            <div id="recurring-expenses-list-modal" class="mb-4 p-4 bg-gray-50 rounded-lg max-h-80 overflow-y-auto"></div>
+            <button id="addNewRecurringExpenseBtn"class="w-full btn-primary font-bold py-2 px-4 rounded-lg">Adicionar Nova Despesa</button>
+        </div>
+    </div>
+    <!-- Modal: Nova Despesa Recorrente / Parcelada -->
+    <div id="recurring-expense-form-modal"class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+        <div class="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-xl bg-white">
+            <h3 class="text-lg font-medium text-center">Nova Despesa Recorrente ou Parcelada</h3>
+            <form id="recurring-expense-form"class="space-y-4 mt-4">
+                <!-- Descrição -->
+                <input type="text" id="recurring-description"placeholder="Ex: Aluguel, Compra na Amazon" class="form-input w-full"required>
+                <!-- Valor -->
+                <input type="number" id="recurring-amount" placeholder="Valor Total"step="0.01" class="form-input w-full"required>
+                <!-- Categoria -->
+                <select id="recurring-category" class="form-input w-full">
+                    <option value="Aluguel">Aluguel</option>
+                    <option value="Água">Água</option>
+                    <option value="Luz">Luz</option>
+                    <option value="Internet">Internet</option>
+                    <option value="Celular">Celular</option>
+                    <option value="Faculdade">Faculdade</option>
+                    <option value="Assinatura">Assinatura</option>
+                    <option value="Compras">Compras</option>
+                    <option value="Outros">Outros</option>
+                </select>
+                <!-- Forma de pagamento -->
+                <div>
+                    <label for="recurring-payment-method" class="text-sm font-medium">Forma de pagamento</label>
+                    <select id="recurring-payment-method" class="form-input w-full">
+                        <option value="pix_debito">Pix/Débito</option>
+                        <option value="credito">Crédito</option>
+                        <option value="vr">VR</option>
+                    </select>
+                </div>
+                <!-- Data inicial -->
+                <input type="date" id="recurring-start-date"class="form-input w-full" required title="Data da primeira cobrança/parcela">
+                <!-- Parcelamento -->
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" id="is-installment-checkbox" class="h-4 w-4 rounded">
+                    <span>É um parcelamento?</span>
+                </label>
+                <!-- Frequência -->
+                <div id="recurring-frequency-section">
+                    <label for="recurring-frequency"class="text-sm font-medium">Frequência</label>
+
+                    <select
+                        id="recurring-frequency"
+                        class="form-input w-full"
+                    >
+                        <option value="monthly">
+                            Mensal
+                        </option>
+
+                        <option value="yearly">
+                            Anual
+                        </option>
+                    </select>
+
+                </div>
+
+                <!-- Número de parcelas -->
+                <div
+                    id="installments-count-section"
+                    class="hidden"
+                >
+
+                    <label
+                        for="installments-count"
+                        class="text-sm font-medium"
+                    >
+                        Número de Parcelas
+                    </label>
+
+                    <input
+                        type="number"
+                        id="installments-count"
+                        min="2"
+                        placeholder="Ex: 12"
+                        class="form-input w-full"
+                    >
+
+                </div>
+
+                <!-- Botões -->
+                <div
+                    class="flex flex-col sm:flex-row-reverse gap-2 pt-4"
+                >
+
+                    <button
+                        type="submit"
+                        class="btn-primary py-2 px-4 rounded-lg"
+                    >
+                        Salvar
+                    </button>
+
+                    <button
+                        type="button"
+                        class="close-modal-btn bg-gray-200 py-2 px-4 rounded-lg"
+                    >
+                        Cancelar
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- Modal: Gerenciar Contas -->
+    <div
+        id="manage-accounts-modal"
+        class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center"
+    >
+
+        <div
+            class="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-xl bg-white"
+        >
+
+            <div class="flex justify-between items-center mb-4">
+
+                <h3
+                    class="text-lg leading-6 font-medium text-gray-900"
+                >
+                    Gerenciar Contas (Caixinhas)
+                </h3>
+
+                <button
+                    type="button"
+                    class="close-modal-btn text-2xl font-bold text-gray-400 hover:text-gray-600"
+                >
+                    &times;
+                </button>
+
+            </div>
+
+            <!-- Formulário de conta -->
+            <form
+                id="add-account-form"
+                class="p-4 bg-gray-50 rounded-lg mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 items-start"
+            >
+
+                <div>
+
+                    <label
+                        for="account-name"
+                        class="block text-sm font-medium text-gray-700"
+                    >
+                        Nome da Conta
+                    </label>
+
+                    <input
+                        type="text"
+                        id="account-name"
+                        placeholder="Ex: Reserva de Emergência"
+                        class="form-input w-full mt-1"
+                        required
+                    >
+
+                </div>
+
+                <div>
+
+                    <label
+                        for="account-initial-value"
+                        class="block text-sm font-medium text-gray-700"
+                    >
+                        Valor Inicial (R$)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="account-initial-value"
+                        step="0.01"
+                        placeholder="0,00"
+                        class="form-input w-full mt-1"
+                        required
+                    >
+
+                </div>
+
+                <div>
+
+                    <label
+                        for="account-goal"
+                        class="block text-sm font-medium text-gray-700"
+                    >
+                        Valor do Objetivo (Opcional)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="account-goal"
+                        step="0.01"
+                        placeholder="Ex: 15000"
+                        class="form-input w-full mt-1"
+                    >
+
+                </div>
+
+                <div class="md:col-span-2">
+
+                    <label
+                        class="flex items-center gap-2 text-sm pt-2"
+                    >
+
+                        <input
+                            type="checkbox"
+                            id="deduct-from-balance"
+                            class="h-4 w-4 rounded"
+                            checked
+                        >
+
+                        <span>
+                            Deduzir do Saldo Principal (cria despesa de aporte)
+                        </span>
+
+                    </label>
+
+                </div>
+
+                <div class="md:col-span-2">
+
+                    <button
+                        type="submit"
+                        class="w-full btn-primary font-bold py-2 px-4 rounded-lg mt-2"
+                    >
+                        Criar Conta
+                    </button>
+
+                </div>
+
+            </form>
+
+            <!-- Lista de contas -->
+            <div
+                id="accounts-list"
+                class="overflow-y-auto max-h-80 space-y-3"
+            ></div>
+
+        </div>
+
+    </div>
+
+    <!-- Modal: Ação em Conta -->
+    <div
+        id="account-action-modal"
+        class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center"
+    >
+
+        <div
+            class="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-xl bg-white"
+        >
+
+            <h3
+                id="account-action-title"
+                class="text-lg leading-6 font-medium text-gray-900 text-center"
+            >
+                Ação
+            </h3>
+
+            <form
+                id="account-action-form"
+                class="space-y-4 mt-4"
+            >
+
+                <input
+                    type="hidden"
+                    id="account-action-id"
+                >
+
+                <input
+                    type="hidden"
+                    id="account-action-type"
+                >
+
+                <p
+                    id="account-action-name"
+                    class="text-center font-semibold text-teal-700"
+                ></p>
+
+                <div>
+
+                    <label
+                        id="account-action-label"
+                        for="account-action-amount"
+                        class="block text-sm font-medium text-gray-700"
+                    >
+                        Valor
+                    </label>
+
+                    <div class="flex items-center space-x-2 mt-1">
+
+                        <span class="text-gray-500">
+                            R$
+                        </span>
+
+                        <input
+                            type="number"
+                            id="account-action-amount"
+                            step="0.01"
+                            class="form-input w-full"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+                <div
+                    class="items-center gap-4 px-4 py-3 sm:px-6 flex flex-col sm:flex-row-reverse"
+                >
+
+                    <button
+                        type="submit"
+                        class="w-full sm:w-auto btn-primary font-bold py-2 px-4 rounded-lg"
+                    >
+                        Confirmar
+                    </button>
+
+                    <button
+                        type="button"
+                        class="close-modal-btn w-full sm:w-auto mt-2 sm:mt-0 bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300"
+                    >
+                        Cancelar
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- Modal: Confirmação -->
+    <div
+        id="confirm-modal"
+        class="modal fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center"
+    >
+
+        <div
+            class="relative mx-auto p-6 border w-full max-w-sm shadow-lg rounded-xl bg-white"
+        >
+
+            <h3
+                id="confirm-modal-title"
+                class="text-lg font-medium text-gray-900"
+            >
+                Confirmar Ação
+            </h3>
+
+            <p
+                id="confirm-modal-message"
+                class="mt-2 text-sm text-gray-600"
+            >
+                Tem certeza que deseja continuar?
+            </p>
+
+            <div class="mt-4 flex justify-end gap-3">
+
+                <button
+                    id="confirm-modal-cancel"
+                    class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    id="confirm-modal-confirm"
+                    class="btn-danger font-bold py-2 px-4 rounded-lg"
+                >
+                    Confirmar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- JavaScript -->
+    <script
+        type="module"
+        src="script.js"
+    ></script>
+
+</body>
+
+</html>
