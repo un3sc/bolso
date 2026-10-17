@@ -40,10 +40,26 @@
 <body class="antialiased text-gray-800">
 
     <!-- Tela de login / cadastro -->
-    <div id="auth-screen" class="min-h-screen flex items-center justify-center px-4 py-10">
-        <div class="card w-full max-w-md p-8">
-            <h1 class="text-2xl font-bold text-center text-gray-900">Bolso</h1>
-            <p class="text-center text-gray-500 text-sm mt-1 mb-6">Entre ou crie sua conta para ver o seu orçamento.</p>
+    <div id="auth-screen" class="relative overflow-hidden min-h-screen flex items-center justify-center px-4 py-10">
+
+    <!-- Fundo animado -->
+    <div class="auth-bg" aria-hidden="true">
+        <span class="blob blob-1"></span>
+        <span class="blob blob-2"></span>
+        <span class="blob blob-3"></span>
+        <span class="coin" style="--x:8%;  --s:34px; --d:18s; --delay:-2s">R$</span>
+        <span class="coin" style="--x:22%; --s:24px; --d:22s; --delay:-9s">R$</span>
+        <span class="coin" style="--x:38%; --s:30px; --d:20s; --delay:-14s">R$</span>
+        <span class="coin" style="--x:55%; --s:22px; --d:25s; --delay:-5s">R$</span>
+        <span class="coin" style="--x:68%; --s:36px; --d:19s; --delay:-11s">R$</span>
+        <span class="coin" style="--x:82%; --s:26px; --d:23s; --delay:-17s">R$</span>
+        <span class="coin" style="--x:92%; --s:30px; --d:21s; --delay:-7s">R$</span>
+    </div>
+
+    <div class="card auth-card relative z-10 w-full max-w-md p-8">
+        <img src="img/favicon.svg" alt="" class="auth-logo">
+        <h1 class="text-3xl font-bold text-center text-gray-900">Bolso</h1>
+        <p class="auth-tagline">Cada centavo no lugar certo.</p>
 
             <div id="config-warning" class="hidden auth-alert auth-alert-error mb-4"></div>
 
@@ -68,7 +84,14 @@
                 <input type="password" id="signup-password-confirm" placeholder="Confirmar senha" autocomplete="new-password" minlength="6" class="form-input w-full" required>
                 <button type="submit" class="w-full btn-primary font-bold py-3 px-4 rounded-lg">Criar conta</button>
             </form>
+            <p class="auth-footnote">Seus dados são só seus: cada conta vê apenas o próprio orçamento.</p>
         </div>
+
+        <p class="auth-credit">
+            Desenvolvido por
+            <a href="https://felipematos.netlify.app" target="_blank" rel="noopener noreferrer">Felipe Matos</a>
+        </p>
+
     </div>
 
     <!-- Aplicação Principal (só aparece depois do login) -->
@@ -267,6 +290,9 @@
                 </div>
             </div>
         </main>
+        <footer class="app-credit">
+            Desenvolvido por <a href="https://felipematos.netlify.app" target="_blank" rel="noopener noreferrer">Felipe Matos</a>
+        </footer>
     </div>
     <!-- ======================================== -->
     <!-- MODAIS                                   -->
