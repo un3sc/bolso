@@ -19,8 +19,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
+        rel="stylesheet">
+
+        <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+        <link rel="icon" href="img/favicon.ico" sizes="48x48">
+        <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+
 
     <script>
         try {
@@ -73,10 +77,16 @@
         <!-- Header -->
         <header class="bg-white shadow-md sticky top-0 z-40">
             <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-900">Organizador Financeiro 💰</h1>
-                <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    Bolso
+                    <svg class="icon icon-title" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+                        <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+                    </svg>
+                </h1>
+                                <div class="flex items-center gap-3">
                     <span id="user-label" class="hidden sm:inline text-sm text-gray-500"></span>
-                    <button id="theme-toggle" type="button" class="theme-toggle" title="Alternar tema"></button>
+                    <button id="theme-toggle" type="button" class="theme-toggle" title="Alternar tema" aria-label="Alternar tema"></button>
                     <button id="logout-btn" type="button" class="theme-toggle btn-ghost" title="Sair da conta">Sair</button>
                 </div>
             </div>
